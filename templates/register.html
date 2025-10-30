@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Smart Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>🧑‍💼 Register New User</h2>
+
+        <form action="{{ url_for('register') }}" method="POST" class="form">
+            <label>Username:</label>
+            <input type="text" name="username" placeholder="Enter username" required>
+
+            <label>Password:</label>
+            <input type="password" name="password" placeholder="Enter password" required>
+
+            <label>Role:</label>
+            <select name="role" required>
+                <option value="Teacher">Teacher</option>
+                <option value="Staff">Staff</option>
+                <option value="Administrator">Administrator</option>
+            </select>
+
+            <label>Security Question:</label>
+            <input type="text" name="security_question" placeholder="Enter a security question" required>
+
+            <label>Answer:</label>
+            <input type="text" name="security_answer" placeholder="Answer for password recovery" required>
+
+            <button type="submit">Register</button>
+        </form>
+
+        <p class="link-text">
+            Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+        </p>
+    </div>
+</body>
+</html>

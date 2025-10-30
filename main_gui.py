@@ -20,6 +20,21 @@ def load_users():
 def save_users(df):
     df.to_csv(USERS_FILE, index=False)
 
+def open_main_gui(username):
+    root = tk.Tk()
+    root.title("Face Recognition Attendance System")
+
+    # Example welcome label
+    tk.Label(root, text=f"Welcome, {username}!", font=("Arial", 16, "bold")).pack(pady=20)
+
+    # Buttons for main functions
+    tk.Button(root, text="📷 Take Attendance", width=20, command=lambda: messagebox.showinfo("Feature", "Attendance feature here")).pack(pady=10)
+    tk.Button(root, text="🧠 Train Model", width=20, command=lambda: messagebox.showinfo("Feature", "Model training feature here")).pack(pady=10)
+    tk.Button(root, text="🗂️ Manage Students", width=20, command=lambda: messagebox.showinfo("Feature", "Manage students here")).pack(pady=10)
+    tk.Button(root, text="🚪 Logout", width=20, command=root.destroy).pack(pady=10)
+
+    root.mainloop()
+
 # ---------------------- Main Application ----------------------
 class FaceApp(tk.Tk):
     def __init__(self):

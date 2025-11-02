@@ -139,7 +139,6 @@ To view attendance:
 python view_attendance.py
 
 🧑‍💻 Author
-
 Aman Singh
-💼 💼 [LinkedIn](https://www.linkedin.com/in/amnsingh0)
+💼 [LinkedIn](https://www.linkedin.com/in/amnsingh0)
 📧 amansinghakr@gamil.com

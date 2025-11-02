@@ -1,124 +1,32 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog
-import csv
-import bcrypt
-import main_gui
+import pandas as pd
+import subprocess
 import os
+from admin_utils import verify_login, get_security_question, reset_password_if_correct
 
+USERS_FILE = "users.csv"
 
-# =====================================================
-# 🔹 Utility Functions
-# =====================================================
-def verify_login(username, password):
-    """Check if username and password match in users.csv"""
+# Ensure user file exists
+if not os.path.exists(USERS_FILE):
+    df = pd.DataFrame(columns=["username", "password", "security_question", "security_answer"])
+    df.to_csv(USERS_FILE, index=False)
+
+# ---------------------- Helper ----------------------
+
+def open_main_dashboard():
+    """Open main admin dashboard."""
+    root.destroy()
+    subprocess.run(["python", "main_gui.py"])
+
+def open_take_attendance():
+    """Run attendance without logging in."""
     try:
-        with open("users.csv", "r") as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                if row["username"] == username:
-                    if bcrypt.checkpw(password.encode("utf-8"), row["password"].encode("utf-8")):
-                        return True
-        return False
-    except FileNotFoundError:
-        messagebox.showerror("Error", "users.csv not found!")
-        return False
+        subprocess.run(["python", "take_attendance.py"], check=True)
+    except Exception as e:
+        messagebox.showerror("Error", f"Could not open attendance module:\n{e}")
 
-
-def get_security_question(username):
-    """Return the security question for a given username"""
-    try:
-        with open("users.csv", "r") as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                if row["username"] == username:
-                    return row["security_question"]
-        return None
-    except FileNotFoundError:
-        messagebox.showerror("Error", "users.csv not found!")
-        return None
-
-
-def reset_password(username, answer, new_password):
-    """Reset the user's password if the answer is correct"""
-    users = []
-    updated = False
-
-    try:
-        with open("users.csv", "r") as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                if row["username"] == username:
-                    if row["security_answer"].lower() == answer.lower():
-                        hashed_pw = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-                        row["password"] = hashed_pw
-                        updated = True
-                users.append(row)
-    except FileNotFoundError:
-        messagebox.showerror("Error", "users.csv not found!")
-        return False
-
-    if updated:
-        with open("users.csv", "w", newline="") as file:
-            fieldnames = ["username", "password", "role", "security_question", "security_answer"]
-            writer = csv.DictWriter(file, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(users)
-        return True
-    else:
-        return False
-
-
-def add_new_user(username, password, role, question, answer):
-    """Add a new user securely"""
-    hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-
-    # Check if user already exists
-    if os.path.exists("users.csv"):
-        with open("users.csv", "r") as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                if row["username"] == username:
-                    messagebox.showerror("Error", "Username already exists!")
-                    return False
-
-    # Add user
-    with open("users.csv", "a", newline="") as file:
-        fieldnames = ["username", "password", "role", "security_question", "security_answer"]
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-
-        if os.stat("users.csv").st_size == 0:
-            writer.writeheader()
-
-        writer.writerow({
-            "username": username,
-            "password": hashed_pw,
-            "role": role,
-            "security_question": question,
-            "security_answer": answer.lower()
-        })
-
-    messagebox.showinfo("Success", f"User '{username}' created successfully!")
-    return True
-
-
-# =====================================================
-# 🔹 GUI Functions
-# =====================================================
-def login():
-    username = entry_username.get().strip()
-    password = entry_password.get().strip()
-
-    if not username or not password:
-        messagebox.showerror("Error", "Please enter both username and password.")
-        return
-
-    if verify_login(username, password):
-        messagebox.showinfo("Success", f"Welcome {username}!")
-        root.destroy()
-        main_gui.open_main_gui(username)  # ✅ Open dashboard
-    else:
-        messagebox.showerror("Error", "Invalid username or password!")
-
+# ---------------------- Forgot Password ----------------------
 
 def forgot_password():
     username = simpledialog.askstring("Forgot Password", "Enter your username:")
@@ -127,63 +35,57 @@ def forgot_password():
 
     question = get_security_question(username)
     if not question:
-        messagebox.showerror("Error", "User not found!")
+        messagebox.showerror("Error", "Username not found.")
         return
 
-    answer = simpledialog.askstring("Security Question", question)
+    answer = simpledialog.askstring("Security Question", f"{question}")
     if not answer:
         return
 
-    new_password = simpledialog.askstring("Reset Password", "Enter your new password:", show="*")
-    if not new_password:
-        return
-
-    if reset_password(username, answer, new_password):
-        messagebox.showinfo("Success", "Password reset successfully!")
+    result = reset_password_if_correct(username, answer)
+    if result:
+        messagebox.showinfo("Success", "Password reset successful! Try logging in again.")
     else:
-        messagebox.showerror("Error", "Incorrect answer or user not found!")
+        messagebox.showerror("Error", "Incorrect answer.")
 
+# ---------------------- Login ----------------------
 
-def create_user():
-    new_username = simpledialog.askstring("New User", "Enter new username:")
-    new_password = simpledialog.askstring("New User", "Enter new password:", show="*")
-    role = simpledialog.askstring("New User", "Enter role (Admin/Teacher/Staff):")
-    question = simpledialog.askstring("New User", "Enter security question:")
-    answer = simpledialog.askstring("New User", "Enter answer to security question:")
+def login():
+    username = username_entry.get()
+    password = password_entry.get()
 
-    if not (new_username and new_password and role and question and answer):
-        messagebox.showerror("Error", "All fields are required!")
-        return
+    if verify_login(username, password):
+        messagebox.showinfo("Success", f"Welcome, {username}!")
+        open_main_dashboard()
+    else:
+        messagebox.showerror("Login Failed", "Invalid username or password.")
 
-    add_new_user(new_username, new_password, role, question, answer)
+# ---------------------- UI ----------------------
 
-
-# =====================================================
-# 🔹 Login Window
-# =====================================================
 root = tk.Tk()
-root.title("Login - Smart Attendance System")
-root.geometry("400x350")
-root.configure(bg="#ecf0f1")
-root.resizable(False, False)
+root.title("Face Recognition Attendance System - Login")
+root.geometry("420x400")
+root.config(bg="#ecf0f1")
 
-# Title
-tk.Label(root, text="Smart Attendance System", font=("Segoe UI", 14, "bold"), bg="#2c3e50", fg="white", width=40, height=2).pack(pady=10)
+tk.Label(root, text="Admin Login", font=("Arial", 20, "bold"), bg="#ecf0f1", fg="#2c3e50").pack(pady=20)
 
-# Username
-tk.Label(root, text="Username:", bg="#ecf0f1", font=("Segoe UI", 10, "bold")).pack(pady=5)
-entry_username = tk.Entry(root, width=30)
-entry_username.pack()
+tk.Label(root, text="Username:", bg="#ecf0f1", font=("Arial", 12)).pack()
+username_entry = tk.Entry(root, width=30)
+username_entry.pack(pady=5)
 
-# Password
-tk.Label(root, text="Password:", bg="#ecf0f1", font=("Segoe UI", 10, "bold")).pack(pady=5)
-entry_password = tk.Entry(root, width=30, show="*")
-entry_password.pack()
+tk.Label(root, text="Password:", bg="#ecf0f1", font=("Arial", 12)).pack()
+password_entry = tk.Entry(root, show="*", width=30)
+password_entry.pack(pady=5)
 
-# Buttons
-tk.Button(root, text="Login", bg="#27ae60", fg="white", width=20, command=login).pack(pady=10)
-tk.Button(root, text="Forgot Password?", bg="#f39c12", fg="white", width=20, command=forgot_password).pack(pady=5)
-tk.Button(root, text="Create New User", bg="#3498db", fg="white", width=20, command=create_user).pack(pady=5)
-tk.Button(root, text="Exit", bg="#e74c3c", fg="white", width=20, command=root.destroy).pack(pady=15)
+tk.Button(root, text="Login", width=20, height=2, bg="#27ae60", fg="white",
+          font=("Arial", 11, "bold"), command=login).pack(pady=15)
+
+tk.Button(root, text="Forgot Password?", bg="#ecf0f1", fg="#2980b9", bd=0, font=("Arial", 10, "underline"),
+          command=forgot_password).pack(pady=5)
+
+# ---------------------- Take Attendance Button ----------------------
+tk.Label(root, text="OR", bg="#ecf0f1", font=("Arial", 11, "bold")).pack(pady=8)
+tk.Button(root, text="Take Attendance", width=20, height=2, bg="#8e44ad", fg="white",
+          font=("Arial", 11, "bold"), command=open_take_attendance).pack(pady=8)
 
 root.mainloop()

@@ -6,7 +6,9 @@ import pandas as pd
 # Paths
 DATASET_DIR = "faces"
 TRAINER_PATH = os.path.join("trainer", "trainer.yml")
-ATTENDANCE_FILE = "attendance.csv"
+today = datetime.date.today().strftime("%Y-%m-%d")
+ATTENDANCE_FILE = f"attendance/attendance_{today}.csv"
+
 
 # Ensure attendance file exists
 if not os.path.exists(ATTENDANCE_FILE):

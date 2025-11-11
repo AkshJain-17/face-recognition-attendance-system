@@ -138,7 +138,15 @@ To view attendance:
 
 python view_attendance.py
 
-🧑‍💻 Author
+🧑‍💻 Author:
+Aaryan Sharma
+💼 [LinkedIn](https://www.linkedin.com/in/aaryan-sharma-a341a732b/)
+📧 aaryansharma90898@gamil.com
+
+Aksh Jain 
+💼 [LinkedIn](https://www.linkedin.com/in/aksh-jain-58a705203/)
+📧 akshjainha@gmail.com
+
 Aman Singh
 💼 [LinkedIn](https://www.linkedin.com/in/amnsingh0)
 📧 amansinghakr@gamil.com

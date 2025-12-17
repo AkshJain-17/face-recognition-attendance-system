@@ -1,34 +1,36 @@
 import tkinter as tk
 from tkinter import messagebox
-import subprocess
 import os
+
+# Internal imports (direct calls)
+from train_model import train_model
 from admin_utils import change_password, add_user
 
-# ------------------- Helper to Run External Scripts -------------------
-
+# External script runner (for camera-based scripts)
 def run_script(script_name):
-    """Run another Python file safely using absolute path."""
     try:
         script_path = os.path.join(os.path.dirname(__file__), script_name)
         if not os.path.exists(script_path):
-            messagebox.showerror("Error", f"'{script_name}' not found in project folder!")
+            messagebox.showerror("Error", f"{script_name} not found!")
             return
-        # Use Popen so GUI remains responsive
-        subprocess.Popen(["python", script_path])
+        os.system(f'python "{script_path}"')
     except Exception as e:
-        messagebox.showerror("Error", f"Unexpected error:\n{e}")
+        messagebox.showerror("Error", str(e))
+
+# ------------------- Button Actions -------------------
 
 def register_face():
     run_script("register_face.py")
-
-def train_model():
-    run_script("train_model.py")
 
 def take_attendance():
     run_script("take_attendance.py")
 
 def view_attendance():
     run_script("view_attendance.py")
+
+def train_model_action():
+    messagebox.showinfo("Info", "Training started...\nPlease wait.")
+    train_model()   # ✅ direct call → popup works correctly
 
 # ------------------- Change Password Window -------------------
 
@@ -38,7 +40,8 @@ def open_change_password_window():
     win.geometry("400x300")
     win.config(bg="#f0f4f7")
 
-    tk.Label(win, text="Change Admin Password", font=("Arial", 16, "bold"), bg="#f0f4f7").pack(pady=15)
+    tk.Label(win, text="Change Admin Password", font=("Arial", 16, "bold"),
+             bg="#f0f4f7").pack(pady=15)
 
     tk.Label(win, text="Username:", bg="#f0f4f7").pack()
     username_entry = tk.Entry(win, width=30)
@@ -56,15 +59,16 @@ def open_change_password_window():
         user = username_entry.get().strip()
         old = old_entry.get().strip()
         new = new_entry.get().strip()
+
         if not user or not old or not new:
             messagebox.showwarning("Input Error", "Please fill all fields.")
             return
-        result = change_password(user, old, new)
-        if result:
+
+        if change_password(user, old, new):
             messagebox.showinfo("Success", "Password updated successfully!")
             win.destroy()
         else:
-            messagebox.showerror("Error", "Incorrect old password or user not found.")
+            messagebox.showerror("Error", "Incorrect credentials.")
 
     tk.Button(win, text="Save Password", width=15, bg="#2ecc71", fg="white",
               font=("Arial", 11, "bold"), command=save_new_pass).pack(pady=15)
@@ -77,24 +81,26 @@ def open_add_admin_window():
     win.geometry("400x380")
     win.config(bg="#f0f4f7")
 
-    tk.Label(win, text="Create New Admin", font=("Arial", 16, "bold"), bg="#f0f4f7").pack(pady=15)
+    tk.Label(win, text="Create New Admin", font=("Arial", 16, "bold"),
+             bg="#f0f4f7").pack(pady=15)
 
-    labels = ["New Username:", "New Password:", "Security Question:", "Security Answer:"]
+    fields = ["New Username", "New Password", "Security Question", "Security Answer"]
     entries = []
 
-    for label in labels:
-        tk.Label(win, text=label, bg="#f0f4f7").pack()
-        ent = tk.Entry(win, width=30, show="*" if "Password" in label else None)
+    for field in fields:
+        tk.Label(win, text=field + ":", bg="#f0f4f7").pack()
+        ent = tk.Entry(win, width=30, show="*" if "Password" in field else None)
         ent.pack(pady=3)
         entries.append(ent)
 
     def save_new_admin():
         user, pwd, ques, ans = [e.get().strip() for e in entries]
+
         if not user or not pwd or not ques or not ans:
             messagebox.showwarning("Input Error", "Please fill all fields.")
             return
-        result = add_user(user, pwd, ques, ans)
-        if result:
+
+        if add_user(user, pwd, ques, ans):
             messagebox.showinfo("Success", "New admin added successfully!")
             win.destroy()
         else:
@@ -111,11 +117,14 @@ if __name__ == "__main__":
     root.geometry("520x550")
     root.config(bg="#f8f9fa")
 
-    tk.Label(root, text="Admin Dashboard", font=("Arial", 22, "bold"), bg="#f8f9fa", fg="#2c3e50").pack(pady=25)
+    tk.Label(root, text="Admin Dashboard",
+             font=("Arial", 22, "bold"),
+             bg="#f8f9fa",
+             fg="#2c3e50").pack(pady=25)
 
     buttons = [
         ("Register New Face", register_face, "#3498db"),
-        ("Train Model", train_model, "#2ecc71"),
+        ("Train Model", train_model_action, "#2ecc71"),
         ("Take Attendance", take_attendance, "#9b59b6"),
         ("View Attendance", view_attendance, "#f39c12"),
         ("Change Password", open_change_password_window, "#e67e22"),
@@ -124,7 +133,9 @@ if __name__ == "__main__":
     ]
 
     for text, cmd, color in buttons:
-        tk.Button(root, text=text, width=25, height=2, bg=color, fg="white",
-                  font=("Arial", 12, "bold"), command=cmd).pack(pady=8)
+        tk.Button(root, text=text, width=25, height=2,
+                  bg=color, fg="white",
+                  font=("Arial", 12, "bold"),
+                  command=cmd).pack(pady=8)
 
     root.mainloop()
